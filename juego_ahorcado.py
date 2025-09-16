@@ -38,7 +38,7 @@ def jugar_ahorcado(intentos_max: int = 10) -> None:
         letras_adivinadas.add(letra)
 
         if letra in palabra_secreta:
-            # reduce para verificar victoria: ¿todas las letras están adivinadas?
+            # reduce para verificar victoria si todas las letras han sido adivinadas
             adivinada = reduce(lambda acc, ch: acc and (ch in letras_adivinadas), palabra_secreta, True)
             if adivinada:
                 mostrar_tablero(palabra_secreta, letras_adivinadas)
