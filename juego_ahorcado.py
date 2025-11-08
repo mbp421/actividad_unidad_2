@@ -1,56 +1,54 @@
 import random
-import itertools
-from functools import reduce
+from collections import deque, Counter
 
-def obtener_palabra_aleatoria() -> str:
-    palabras = ["materia", "comida", "agua", "gato", "felicidad", "saltar", "futbol"]
-    return random.choice(palabras)
+def obtener_palabra():
+    return random.choice(["materia", "comida", "agua", "gato", "felicidad", "saltar", "futbol"])
 
-def mostrar_tablero(palabra_secreta: str, letras_adivinadas: set[str]) -> None:
-    # List comprehension + join
-    tablero = "".join([letra if letra in letras_adivinadas else "_" for letra in palabra_secreta])
-    print("\n" + " ".join(tablero))
+def jugar_ahorcado():
+    palabra = obtener_palabra()
+    letras_palabra = set(palabra)              # SET → letras únicas de la palabra
+    letras_adivinadas = set()                  # SET → letras descubiertas
+    historial = []                             # LIST como pila → UNDO
+    jugadores = deque(["Jugador 1", "Jugador 2"])  # Cola circular
+    errores = { "Jugador 1": 0, "Jugador 2": 0 }   # MAP conteo errores
 
-def solicitar_letra(letras_introducidas: set[str]) -> str:
-    while True:
-        letra = input("Introduce una letra: ").strip().lower()
-        if len(letra) != 1 or not letra.isalpha():
-            print("Introduce solo UNA letra (a-z).")
+    intentos = 8
+    print("\n=== AHORCADO CON COLECCIONES ===")
+
+    while intentos > 0:
+        jugador = jugadores[0]
+        print(f"\nTurno de: {jugador}")
+
+        mostrar = "".join([l if l in letras_adivinadas else "_" for l in palabra])
+        print("Palabra:", mostrar)
+
+        entrada = input("Letra (o UNDO): ").lower()
+
+        if entrada == "undo":
+            if historial:
+                ultima = historial.pop()
+                letras_adivinadas.remove(ultima)
+                print(f"Deshecha: {ultima}")
             continue
-        if letra in letras_introducidas:
-            print("Ya probaste esa letra, intenta otra.")
+
+        if entrada in letras_adivinadas:
+            print("Letra ya usada.")
             continue
-        return letra
 
-def jugar_ahorcado(intentos_max: int = 10) -> None:
-    palabra_secreta = obtener_palabra_aleatoria()
-    letras_adivinadas: set[str] = set()
-    intentos_restantes = intentos_max
+        historial.append(entrada)
 
-    print("¡Bienvenido al Ahorcado!\n")
-
-    while intentos_restantes > 0:
-        mostrar_tablero(palabra_secreta, letras_adivinadas)
-
-        # itertools: ciclo infinito con break cuando hay entrada válida
-        letra = next(filter(lambda l: l not in letras_adivinadas, 
-                            (solicitar_letra(letras_adivinadas) for _ in itertools.count())))
-        letras_adivinadas.add(letra)
-
-        if letra in palabra_secreta:
-            # reduce para verificar victoria si todas las letras han sido adivinadas
-            adivinada = reduce(lambda acc, ch: acc and (ch in letras_adivinadas), palabra_secreta, True)
-            if adivinada:
-                mostrar_tablero(palabra_secreta, letras_adivinadas)
-                print(f"\n ¡Felicidades! Adivinaste la palabra: {palabra_secreta}")
-                return
-            else:
-                print(" Letra correcta.")
+        if entrada in letras_palabra:
+            letras_adivinadas.add(entrada)
+            if letras_adivinadas == letras_palabra:
+                print(f"¡{jugador} gana! La palabra era: {palabra}")
+                break
         else:
-            intentos_restantes -= 1
-            print(f" Letra incorrecta. Te quedan {intentos_restantes} intentos.")
+            intentos -= 1
+            errores[jugador] += 1
+            print(f"Incorrecto. Intentos restantes: {intentos}")
 
-    print(f"\n Has perdido. La palabra secreta era: {palabra_secreta}")
+        jugadores.rotate(-1)
 
-if __name__ == "__main__":
-    jugar_ahorcado()
+    print("\nErrores por jugador:", errores)
+    ranking = sorted(errores.items(), key=lambda x: x[1])
+    print("Ranking:", ranking)
